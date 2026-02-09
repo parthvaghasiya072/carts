@@ -1,48 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const Cart = require('../models/Cart');
-const Product = require('../models/Product');
+const {
+    addToCart,
+    getCart,
+    updateCartItem,
+    removeFromCart,
+    clearCart
+} = require('../controllers/cartController');
 
-// POST add to cart
-router.post('/', async (req, res) => {
-    const { productId, quantity, cartId } = req.body;
 
-    try {
-        let cart;
-        if (cartId) {
-            cart = await Cart.findById(cartId);
-        }
+router.post('/addtocart', addToCart);
 
-        if (!cart) {
-            cart = new Cart({ items: [] });
-        }
+router.get('/getcart/:cartId', getCart);
 
-        const product = await Product.findById(productId);
-        if (!product) return res.status(404).json({ message: 'Product not found' });
+router.put('/updateitem/:cartId/:productId', updateCartItem);
 
-        const itemIndex = cart.items.findIndex(item => item.product.toString() === productId);
-        if (itemIndex > -1) {
-            cart.items[itemIndex].quantity += parseInt(quantity);
-        } else {
-            cart.items.push({ product: productId, quantity: parseInt(quantity) });
-        }
+router.delete('/removeitem/:cartId/:productId', removeFromCart);
 
-        await cart.save();
-        res.status(200).json(cart);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
-// GET cart
-router.get('/:cartId', async (req, res) => {
-    try {
-        const cart = await Cart.findById(req.params.cartId).populate('items.product');
-        if (!cart) return res.status(404).json({ message: 'Cart not found' });
-        res.json(cart);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+router.delete('/clearcart/:cartId', clearCart);
 
 module.exports = router;

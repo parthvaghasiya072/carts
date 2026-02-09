@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { createProduct } from '../services/api';
+import { useDispatch } from 'react-redux';
+import { createProduct } from '../redux/slices/productSlice';
 import { toast } from 'react-toastify';
 
 const Admin = () => {
+    const dispatch = useDispatch();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState('');
@@ -25,7 +27,7 @@ const Admin = () => {
         }
 
         try {
-            await createProduct(formData);
+            await dispatch(createProduct(formData)).unwrap();
             toast.success('Product added successfully');
             setName('');
             setDescription('');
@@ -36,7 +38,7 @@ const Admin = () => {
             document.getElementById('fileInput').value = "";
         } catch (err) {
             console.error(err);
-            toast.error('Error adding product: ' + (err.response?.data?.message || err.message));
+            toast.error('Error adding product: ' + (err.message || 'Unknown error'));
         }
     };
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
+import { useSelector } from 'react-redux';
 
 const Navbar = () => {
-    const { cartCount } = useCart();
+    const cartCount = useSelector((state) => state.cart.count);
 
     return (
         <nav className="navbar">

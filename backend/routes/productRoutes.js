@@ -1,21 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
-
-// GET all products
-router.get('/', async (req, res) => {
-    try {
-        const products = await Product.find();
-        res.json(products);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
 const multer = require('multer');
 const path = require('path');
+const {
+    getAllProducts,
+    createProduct,
+    getProductById,
+    updateProduct,
+    deleteProduct
+} = require('../controllers/productController');
 
-// Configure multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -24,20 +18,17 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname));
     }
 });
+
 const upload = multer({ storage });
 
-// POST create product (Admin) with image upload
-router.post('/', upload.single('image'), async (req, res) => {
-    const { name, description, price, category } = req.body;
-    const image = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : req.body.image;
+router.get('/getallproducts', getAllProducts);
 
-    try {
-        const product = new Product({ name, description, price, image, category });
-        const savedProduct = await product.save();
-        res.status(201).json(savedProduct);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+router.post('/createproduct', upload.single('image'), createProduct);
+
+router.get('/getproduct/:id', getProductById);
+
+router.put('/updateproduct/:id', updateProduct);
+
+router.delete('/deleteproduct/:id', deleteProduct);
 
 module.exports = router;

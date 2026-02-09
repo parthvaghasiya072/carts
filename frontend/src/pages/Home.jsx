@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { getProducts, getImageUrl } from '../services/api';
-import { useCart } from '../context/CartContext';
-import { toast } from 'react-toastify';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { getImageUrl } from '../services/api';
+import { fetchProducts } from '../redux/slices/productSlice';
+import { addToCart } from '../redux/slices/cartSlice';
 
 const Home = () => {
-    const [products, setProducts] = useState([]);
-    const { addToCart } = useCart();
+    const dispatch = useDispatch();
+    const { items: products, loading, error } = useSelector((state) => state.products);
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const res = await getProducts();
-                setProducts(res.data);
-            } catch (err) {
-                console.error(err);
-                toast.error('Failed to load products');
-            }
-        };
-        fetchProducts();
-    }, []);
+        dispatch(fetchProducts());
+    }, [dispatch]);
+
+    const handleAddToCart = (productId) => {
+        dispatch(addToCart({ productId, quantity: 1 }));
+    };
+
+    if (loading) return <div className="loading">Loading products...</div>;
+    if (error) return <div className="error">Error: {error}</div>;
 
     return (
         <div className="page-container">
@@ -35,7 +34,7 @@ const Home = () => {
                             <div className="product-footer">
                                 <span className="product-price">${product.price}</span>
                                 <button
-                                    onClick={() => addToCart(product._id)}
+                                    onClick={() => handleAddToCart(product._id)}
                                     className="add-btn"
                                 >
                                     Add to Cart
