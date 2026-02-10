@@ -1,9 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getCart, addToCart as apiAddToCart, createOrder as apiCreateOrder } from '../../services/api'; // Import apiCreateOrder just in case, but we use orderSlice's thunk usually? No, cartSlice doesn't call createOrder API directly.
+import {
+    getCart,
+    addToCart as apiAddToCart,
+    updateCartItem as apiUpdateCartItem,
+    removeFromCart as apiRemoveFromCart,
+    clearCart as apiClearCart
+} from '../../services/api';
 import { toast } from 'react-toastify';
-import { createOrder } from './orderSlice'; // Import the thunk from orderSlice
+import { createOrder } from './orderSlice';
 
-// Helper to get cartId from localStorage
 const getLocalCartId = () => localStorage.getItem('cartId');
 
 export const fetchCart = createAsyncThunk(
@@ -33,16 +38,47 @@ export const addToCart = createAsyncThunk(
 
         try {
             const response = await apiAddToCart(productId, quantity, cartId);
-
-            // If we didn't have a cartId before, save the new one
             if (!cartId && response.data._id) {
                 localStorage.setItem('cartId', response.data._id);
             }
-
             toast.success('Added to cart!');
             return response.data;
         } catch (error) {
-            toast.error('Failed to add to cart: ' + (error.response?.data?.message || error.message));
+            toast.error('Failed to add: ' + (error.response?.data?.message || error.message));
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+export const updateCartItem = createAsyncThunk(
+    'cart/updateCartItem',
+    async ({ productId, quantity }, { rejectWithValue, getState }) => {
+        const state = getState();
+        const cartId = state.cart.cartId || getLocalCartId();
+        if (!cartId) return rejectWithValue('No cart found');
+
+        try {
+            const response = await apiUpdateCartItem(cartId, productId, quantity);
+            return response.data;
+        } catch (error) {
+            toast.error('Update failed');
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
+
+export const removeFromCart = createAsyncThunk(
+    'cart/removeFromCart',
+    async (productId, { rejectWithValue, getState }) => {
+        const state = getState();
+        const cartId = state.cart.cartId || getLocalCartId();
+        if (!cartId) return rejectWithValue('No cart found');
+
+        try {
+            const response = await apiRemoveFromCart(cartId, productId);
+            return response.data;
+        } catch (error) {
+            toast.error('Removal failed');
             return rejectWithValue(error.response?.data || error.message);
         }
     }
@@ -59,9 +95,8 @@ const cartSlice = createSlice({
         total: 0,
     },
     reducers: {
-        clearCart: (state) => {
+        clearCartLocal: (state) => {
             state.items = [];
-            // state.count = 0; // Don't reset count immediately if purely local? Wait, clearCart means empty.
             state.count = 0;
             state.cartId = null;
             state.total = 0;
@@ -69,47 +104,26 @@ const cartSlice = createSlice({
         }
     },
     extraReducers: (builder) => {
+        const handleCartFulfilled = (state, action) => {
+            state.loading = false;
+            if (action.payload) {
+                state.items = action.payload.items || [];
+                state.cartId = action.payload._id;
+                state.count = state.items.reduce((acc, item) => acc + item.quantity, 0);
+                state.total = state.items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
+            }
+        };
+
         builder
-            // Fetch Cart
-            .addCase(fetchCart.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchCart.fulfilled, (state, action) => {
-                state.loading = false;
-                if (action.payload) {
-                    state.items = action.payload.items || [];
-                    state.cartId = action.payload._id;
-                    state.count = state.items.reduce((acc, item) => acc + item.quantity, 0);
-                    state.total = state.items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
-                } else {
-                    // Cart not found or empty
-                    state.items = [];
-                    state.count = 0;
-                    state.cartId = null;
-                    state.total = 0;
-                }
-            })
+            .addCase(fetchCart.pending, (state) => { state.loading = true; })
+            .addCase(fetchCart.fulfilled, handleCartFulfilled)
             .addCase(fetchCart.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
-            // Add To Cart
-            .addCase(addToCart.pending, (state) => {
-                state.loading = true;
-            })
-            .addCase(addToCart.fulfilled, (state, action) => {
-                state.loading = false;
-                state.items = action.payload.items;
-                state.cartId = action.payload._id;
-                state.count = state.items.reduce((acc, item) => acc + item.quantity, 0);
-                state.total = state.items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
-            })
-            .addCase(addToCart.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
-            // Handle Order Creation Success (Clear Cart)
+            .addCase(addToCart.fulfilled, handleCartFulfilled)
+            .addCase(updateCartItem.fulfilled, handleCartFulfilled)
+            .addCase(removeFromCart.fulfilled, handleCartFulfilled)
             .addCase(createOrder.fulfilled, (state) => {
                 state.items = [];
                 state.count = 0;
@@ -120,5 +134,5 @@ const cartSlice = createSlice({
     },
 });
 
-export const { clearCart } = cartSlice.actions;
+export const { clearCartLocal } = cartSlice.actions;
 export default cartSlice.reducer;

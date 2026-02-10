@@ -13,35 +13,69 @@ const getAllProducts = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-    const { name, description, price, category } = req.body;
-
-    // Handle image upload - either from file upload or URL
-    const image = req.file
-        ? `http://localhost:5000/uploads/${req.file.filename}`
-        : req.body.image;
-
     try {
+        const { name, description, price, category } = req.body;
+
+        // Log received data for debugging
+        console.log('=== Product Creation Request ===');
+        console.log('Body:', req.body);
+        console.log('File:', req.file);
+
+        // Validation
+        if (!name || !description || !price || !category) {
+            return res.status(400).json({
+                message: 'Missing required fields',
+                error: 'Name, description, price, and category are required'
+            });
+        }
+
+        // Handle image upload - either from file upload or use placeholder
+        let image;
+        if (req.file) {
+            image = `/uploads/${req.file.filename}`;
+            console.log('Image uploaded:', image);
+        } else if (req.body.image) {
+            image = req.body.image;
+            console.log('Image URL provided:', image);
+        } else {
+            image = 'https://via.placeholder.com/400x400?text=No+Image';
+            console.log('Using placeholder image');
+        }
+
+        // Create product
         const product = new Product({
             name,
             description,
-            price,
+            price: parseFloat(price),
             image,
             category
         });
 
         const savedProduct = await product.save();
+        const totalProducts = await Product.countDocuments();
+        console.log(`✅ Product saved! ID: ${savedProduct._id}. Total in DB: ${totalProducts}`);
 
         res.status(201).json({
             message: 'Product created successfully',
-            product: savedProduct
+            product: savedProduct,
+            totalCount: totalProducts
         });
     } catch (error) {
+        console.error('=== Product Creation Error ===');
+        console.error('Error:', error);
+        console.error('Stack:', error.stack);
+
         res.status(400).json({
             message: 'Error creating product',
-            error: error.message
+            error: error.message,
+            details: error.errors ? Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            })) : null
         });
     }
 };
+
 
 const getProductById = async (req, res) => {
     try {

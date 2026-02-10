@@ -1,1 +1,66 @@
-/* Reset and global styles provided in App.css */
+@import "tailwindcss";
+
+@theme {
+    --font-outfit: "Outfit", sans-serif;
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    --color-primary-950: #172554;
+}
+
+@layer base {
+    body {
+        @apply font-outfit bg-slate-50 text-slate-900 min-h-screen;
+        font-family: var(--font-outfit);
+    }
+}
+
+@layer components {
+    .glass {
+        @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200;
+    }
+
+    .title-gradient {
+        @apply bg-gradient-to-r from-indigo-600 to-amber-500 bg-clip-text text-transparent font-extrabold;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    }
+
+    .btn-primary {
+        @apply bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-500/30 hover:-translate-y-0.5 hover:shadow-indigo-500/40;
+    }
+
+    .btn-secondary {
+        @apply bg-white text-slate-900 border border-slate-200 hover:bg-slate-50;
+    }
+
+    .form-input {
+        @apply w-full px-4 py-3 pl-11 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+}

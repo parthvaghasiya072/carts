@@ -31,7 +31,7 @@ const productSchema = new mongoose.Schema(
         // Product media
         image: {
             type: String,
-            required: [true, 'Product image is required']
+            default: 'https://via.placeholder.com/400x400?text=No+Image'
         },
 
         // Product categorization

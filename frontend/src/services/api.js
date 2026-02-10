@@ -2,7 +2,31 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: 'http://localhost:5000/api',
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
+
+// Automatically add Authorization header if token exists
+api.interceptors.request.use(
+    (config) => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            try {
+                const { token } = JSON.parse(savedUser);
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (error) {
+                console.error('API Interceptor: Error parsing token', error);
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 export const getProducts = () => api.get('/products/getallproducts');
 
@@ -46,7 +70,7 @@ export const deleteOrder = (id) =>
 export const getImageUrl = (path) => {
     return path
         ? (path.startsWith('http') ? path : `http://localhost:5000${path}`)
-        : 'https://via.placeholder.com/150';
+        : 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800';
 };
 
 export default api;

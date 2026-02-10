@@ -59,7 +59,13 @@ const productSlice = createSlice({
             })
             .addCase(createProduct.fulfilled, (state, action) => {
                 state.createStatus = 'succeeded';
-                state.items.push(action.payload);
+                // The backend returns { message, product }, so we push action.payload.product
+                if (action.payload.product) {
+                    state.items.push(action.payload.product);
+                } else {
+                    // Fallback if the payload is the product itself
+                    state.items.push(action.payload);
+                }
             })
             .addCase(createProduct.rejected, (state, action) => {
                 state.createStatus = 'failed';
